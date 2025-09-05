@@ -1,7 +1,7 @@
 'use client';
 
 import { RightsCard } from '@/lib/types';
-import { Lock, Shield, Car, Search, Handcuffs } from 'lucide-react';
+import { Lock, Shield, Car, Search, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface InfoCardProps {
@@ -14,7 +14,7 @@ const categoryIcons = {
   basic: Shield,
   traffic: Car,
   search: Search,
-  arrest: Handcuffs,
+  arrest: AlertTriangle,
 };
 
 const categoryColors = {

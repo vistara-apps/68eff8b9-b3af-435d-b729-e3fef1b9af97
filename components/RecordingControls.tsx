@@ -126,14 +126,14 @@ export function RecordingControls({
       <ActionFAB
         variant="record"
         onClick={() => startRecording('audio')}
-        icon={<Mic className="w-6 h-6" />}
+        icon={Mic}
         label="Start Audio Recording"
       />
       
       <ActionFAB
         variant="secondary"
         onClick={() => startRecording('video')}
-        icon={<Video className="w-6 h-6" />}
+        icon={Video}
         label="Start Video Recording"
       />
     </div>

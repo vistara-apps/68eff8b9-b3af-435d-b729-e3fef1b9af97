@@ -1,53 +1,84 @@
-export const US_STATES = [
-  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
-  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
-  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
-];
+import { RightsCard, StateLaw } from './types';
 
-export const BASIC_RIGHTS = [
+export const BASIC_RIGHTS_CARDS: RightsCard[] = [
   {
-    id: 'right-to-remain-silent',
+    id: '1',
     title: 'Right to Remain Silent',
-    description: 'You have the right to remain silent. You do not have to answer questions.',
-    script: 'I am exercising my right to remain silent.'
+    content: 'You have the right to remain silent. You do not have to answer questions about where you are going, where you are traveling from, what you are doing, or where you live.',
+    category: 'basic',
+    isPremium: false,
   },
   {
-    id: 'right-to-refuse-search',
-    title: 'Right to Refuse Search',
-    description: 'You can refuse consent to search your vehicle, person, or belongings.',
-    script: 'I do not consent to any searches.'
+    id: '2',
+    title: 'Right to Refuse Searches',
+    content: 'You have the right to refuse to consent to a search of yourself, your car, or your home. Police may pat you down for weapons if they suspect you are armed and dangerous.',
+    category: 'search',
+    isPremium: false,
   },
   {
-    id: 'right-to-leave',
+    id: '3',
     title: 'Right to Leave',
-    description: 'You have the right to ask if you are free to leave.',
-    script: 'Am I free to leave?'
+    content: 'You have the right to leave if you are not under arrest. Ask "Am I free to go?" If yes, you can leave calmly.',
+    category: 'basic',
+    isPremium: false,
   },
   {
-    id: 'right-to-attorney',
-    title: 'Right to an Attorney',
-    description: 'You have the right to speak with an attorney before answering questions.',
-    script: 'I want to speak with my attorney.'
-  }
+    id: '4',
+    title: 'Traffic Stop Rights',
+    content: 'During a traffic stop, you must show your license, registration, and insurance if requested. You can remain silent for other questions.',
+    category: 'traffic',
+    isPremium: true,
+  },
 ];
 
-export const EMERGENCY_SCRIPTS = {
+export const SAMPLE_STATE_LAWS: StateLaw[] = [
+  {
+    state: 'CA',
+    keyRights: [
+      'Right to remain silent',
+      'Right to refuse consent to search',
+      'Right to ask if you are free to leave',
+      'Right to record police interactions',
+    ],
+    commonScenarios: [
+      {
+        id: 'ca-traffic',
+        title: 'Traffic Stop',
+        description: 'What to do during a routine traffic stop in California',
+        isPremium: true,
+      },
+      {
+        id: 'ca-search',
+        title: 'Search Request',
+        description: 'How to handle requests to search your vehicle or person',
+        isPremium: true,
+      },
+    ],
+    scripts: [
+      {
+        id: 'ca-traffic-en',
+        scenarioId: 'ca-traffic',
+        language: 'en',
+        content: 'Officer, I am exercising my right to remain silent. I do not consent to any searches. Am I free to go?',
+        isPremium: true,
+      },
+    ],
+  },
+];
+
+export const EMERGENCY_PHRASES = {
   en: {
-    alert: 'EMERGENCY: I am currently in a police interaction at my current location. Please monitor this situation.',
+    alert: 'I am currently in a police interaction. My location is attached. Please monitor this situation.',
     recording: 'I am recording this interaction for my safety and legal protection.',
-    calm: 'I am remaining calm and complying with lawful orders while exercising my constitutional rights.'
+    silent: 'I am exercising my right to remain silent.',
+    search: 'I do not consent to any searches.',
+    leave: 'Am I free to go?',
   },
   es: {
-    alert: 'EMERGENCIA: Actualmente estoy en una interacción policial en mi ubicación actual. Por favor monitoree esta situación.',
+    alert: 'Actualmente estoy en una interacción policial. Mi ubicación está adjunta. Por favor monitoree esta situación.',
     recording: 'Estoy grabando esta interacción para mi seguridad y protección legal.',
-    calm: 'Me mantengo calmado y cumplo con órdenes legales mientras ejerzo mis derechos constitucionales.'
-  }
-};
-
-export const PRICING = {
-  stateSpecificContent: 2.99,
-  premiumScripts: 1.99,
-  fullAccess: 4.99
+    silent: 'Estoy ejerciendo mi derecho a permanecer en silencio.',
+    search: 'No consiento a ninguna búsqueda.',
+    leave: '¿Soy libre de irme?',
+  },
 };

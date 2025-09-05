@@ -36,19 +36,8 @@ module.exports = {
         'modal': '0px 8px 32px rgba(0, 0, 0, 0.16)',
       },
       animation: {
-        'fade-in': 'fadeIn 200ms ease-in-out',
-        'slide-up': 'slideUp 300ms ease-in-out',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(20px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
-      },
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      }
     },
   },
   plugins: [],

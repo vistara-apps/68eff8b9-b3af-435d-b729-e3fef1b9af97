@@ -1,318 +1,353 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, MapPin, Users, Settings2, Mic, AlertTriangle, Lock, ChevronRight } from 'lucide-react';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
-import { ConnectWallet, Wallet } from '@coinbase/onchainkit/wallet';
-import { Name } from '@coinbase/onchainkit/identity';
+import { 
+  Shield, 
+  Mic, 
+  AlertTriangle, 
+  Settings2, 
+  Plus,
+  Sparkles,
+  MapPin,
+  Clock
+} from 'lucide-react';
 
+// Components
 import { InfoCard } from '@/components/InfoCard';
-import { RightsCard } from '@/components/RightsCard';
+import { ActionFAB } from '@/components/ActionFAB';
 import { ContactList } from '@/components/ContactList';
 import { LanguageSelector } from '@/components/LanguageSelector';
-import { RecordingControls } from '@/components/RecordingControls';
+import { RecordingModal } from '@/components/RecordingModal';
 import { EmergencyAlert } from '@/components/EmergencyAlert';
 
-import { BASIC_RIGHTS, PRICING } from '@/lib/constants';
-import { formatCurrency, requestLocationPermission } from '@/lib/utils';
-import { EmergencyContact, LocationData } from '@/lib/types';
+// Types and constants
+import { User, EmergencyContact, InteractionLog } from '@/lib/types';
+import { BASIC_RIGHTS_CARDS, EMERGENCY_PHRASES } from '@/lib/constants';
+import { getCurrentLocation, getStateFromCoordinates, generateInteractionSummary } from '@/lib/utils';
 
 export default function HomePage() {
   const { setFrameReady } = useMiniKit();
   
   // State management
-  const [currentView, setCurrentView] = useState<'home' | 'rights' | 'contacts' | 'settings'>('home');
-  const [language, setLanguage] = useState<'en' | 'es'>('en');
-  const [userLocation, setUserLocation] = useState<LocationData | null>(null);
-  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([
-    {
-      id: '1',
-      name: 'John Doe',
-      phone: '+1 (555) 123-4567',
-      relationship: 'Family'
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      phone: '+1 (555) 987-6543',
-      relationship: 'Friend'
-    }
-  ]);
-  const [hasUnlockedPremium, setHasUnlockedPremium] = useState(false);
+  const [user, setUser] = useState<User>({
+    userId: 'demo-user',
+    state: 'CA',
+    languagePreference: 'en',
+    emergencyContacts: [
+      {
+        id: '1',
+        name: 'Sarah Johnson',
+        phone: '(555) 123-4567',
+        relationship: 'Emergency Contact',
+      },
+      {
+        id: '2',
+        name: 'Legal Aid Hotline',
+        phone: '(555) 987-6543',
+        relationship: 'Legal Support',
+      },
+    ],
+  });
+
+  const [currentView, setCurrentView] = useState<'home' | 'contacts' | 'settings'>('home');
+  const [showRecordingModal, setShowRecordingModal] = useState(false);
+  const [showEmergencyAlert, setShowEmergencyAlert] = useState(false);
+  const [interactionLogs, setInteractionLogs] = useState<InteractionLog[]>([]);
+  const [currentLocation, setCurrentLocation] = useState<string>('');
 
   // Initialize MiniKit
   useEffect(() => {
     setFrameReady();
   }, [setFrameReady]);
 
-  // Request location permission on mount
+  // Get user location on mount
   useEffect(() => {
-    const getLocation = async () => {
-      const position = await requestLocationPermission();
-      if (position) {
-        setUserLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          address: 'Current Location' // In real app, would reverse geocode
-        });
-      }
-    };
-    getLocation();
+    getCurrentLocation()
+      .then((position) => {
+        const state = getStateFromCoordinates(
+          position.coords.latitude,
+          position.coords.longitude
+        );
+        setUser(prev => ({ ...prev, state }));
+        setCurrentLocation(`${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`);
+      })
+      .catch((error) => {
+        console.error('Location error:', error);
+      });
   }, []);
 
-  const handleUnlockPremium = () => {
-    // In a real app, this would integrate with Stripe
-    alert(`Unlock premium content for ${formatCurrency(PRICING.stateSpecificContent)}?`);
-    setHasUnlockedPremium(true);
+  // Handlers
+  const handleRecordingSave = (recordingData: { duration: number; summary: string }) => {
+    const newLog: InteractionLog = {
+      logId: Date.now().toString(),
+      userId: user.userId,
+      timestamp: new Date(),
+      location: {
+        latitude: 0,
+        longitude: 0,
+        address: currentLocation,
+      },
+      summary: recordingData.summary,
+      shared: false,
+    };
+    
+    setInteractionLogs(prev => [newLog, ...prev]);
+    setShowRecordingModal(false);
   };
 
-  const handleRecordingStart = (type: 'audio' | 'video') => {
-    console.log(`Started ${type} recording`);
+  const handleEmergencyAlert = () => {
+    setShowEmergencyAlert(false);
+    // In a real app, this would trigger actual notifications
+    alert('Emergency alert sent to your contacts!');
   };
 
-  const handleRecordingStop = (recordingUrl: string) => {
-    console.log('Recording stopped:', recordingUrl);
-    // In a real app, would save to InteractionLog
+  const handleContactsChange = (contacts: EmergencyContact[]) => {
+    setUser(prev => ({ ...prev, emergencyContacts: contacts }));
   };
 
-  const handleEmergencyAlert = (contactIds: string[]) => {
-    console.log('Emergency alert sent to:', contactIds);
-    alert('Emergency alert sent successfully!');
+  const handleLanguageChange = (language: 'en' | 'es') => {
+    setUser(prev => ({ ...prev, languagePreference: language }));
   };
 
-  const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = language === 'es' ? 'es-ES' : 'en-US';
-      speechSynthesis.speak(utterance);
-    }
-  };
-
-  const renderHomeView = () => (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-4">
-        <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto">
-          <Shield className="w-8 h-8 text-white" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">KnowYourRights Cards</h1>
-          <p className="text-gray-300">Informed. Confident. In control during police stops.</p>
-        </div>
+  // Floating background elements
+  const FloatingElements = () => (
+    <>
+      <div className="floating-element top-20 left-10">
+        <Shield className="w-8 h-8 text-purple-400" />
       </div>
-
-      {/* Wallet Connection */}
-      <div className="glass-card p-4">
-        <Wallet>
-          <ConnectWallet>
-            <Name />
-          </ConnectWallet>
-        </Wallet>
+      <div className="floating-element top-40 right-20" style={{ animationDelay: '2s' }}>
+        <Sparkles className="w-6 h-6 text-cyan-400" />
       </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        <button
-          onClick={() => setCurrentView('rights')}
-          className="glass-card-hover p-6 text-center space-y-3"
-        >
-          <Shield className="w-8 h-8 text-accent mx-auto" />
-          <div>
-            <h3 className="font-semibold text-white">Know Your Rights</h3>
-            <p className="text-sm text-gray-300">Essential rights summary</p>
-          </div>
-        </button>
-
-        <button
-          onClick={() => setCurrentView('contacts')}
-          className="glass-card-hover p-6 text-center space-y-3"
-        >
-          <Users className="w-8 h-8 text-accent mx-auto" />
-          <div>
-            <h3 className="font-semibold text-white">Emergency Contacts</h3>
-            <p className="text-sm text-gray-300">Manage your contacts</p>
-          </div>
-        </button>
+      <div className="floating-element bottom-40 left-20" style={{ animationDelay: '4s' }}>
+        <MapPin className="w-7 h-7 text-pink-400" />
       </div>
-
-      {/* Location Status */}
-      {userLocation && (
-        <div className="glass-card p-4 flex items-center space-x-3">
-          <MapPin className="w-5 h-5 text-accent" />
-          <div>
-            <p className="text-white font-medium">Location Detected</p>
-            <p className="text-sm text-gray-300">{userLocation.address}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Premium Content Teaser */}
-      <InfoCard
-        title="State-Specific Legal Scripts"
-        description="Get tailored scripts and legal information for your specific state and situation."
-        isPremium={!hasUnlockedPremium}
-        onUnlock={handleUnlockPremium}
-      >
-        {hasUnlockedPremium && (
-          <div className="space-y-2">
-            <p className="text-accent font-medium">✓ California Traffic Stop Scripts</p>
-            <p className="text-accent font-medium">✓ Bilingual Support (EN/ES)</p>
-            <p className="text-accent font-medium">✓ Scenario-Specific Guidance</p>
-          </div>
-        )}
-      </InfoCard>
-    </div>
-  );
-
-  const renderRightsView = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setCurrentView('home')}
-          className="text-gray-300 hover:text-white transition-colors duration-200"
-        >
-          ← Back
-        </button>
-        <h2 className="text-xl font-bold text-white">Your Rights</h2>
-        <div></div>
-      </div>
-
-      <div className="space-y-4">
-        {BASIC_RIGHTS.map((right) => (
-          <RightsCard
-            key={right.id}
-            right={right}
-            onSpeak={speakText}
-          />
-        ))}
-      </div>
-
-      <InfoCard
-        title="Remember"
-        description="Stay calm, be respectful, and clearly state your rights. You have the right to record the interaction in most states."
-        variant="detailed"
-      />
-    </div>
-  );
-
-  const renderContactsView = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setCurrentView('home')}
-          className="text-gray-300 hover:text-white transition-colors duration-200"
-        >
-          ← Back
-        </button>
-        <h2 className="text-xl font-bold text-white">Contacts</h2>
-        <div></div>
-      </div>
-
-      <ContactList
-        contacts={emergencyContacts}
-        variant="editable"
-        onEdit={(contact) => console.log('Edit contact:', contact)}
-        onDelete={(id) => {
-          setEmergencyContacts(contacts => contacts.filter(c => c.id !== id));
-        }}
-        onAdd={() => console.log('Add new contact')}
-      />
-    </div>
-  );
-
-  const renderSettingsView = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setCurrentView('home')}
-          className="text-gray-300 hover:text-white transition-colors duration-200"
-        >
-          ← Back
-        </button>
-        <h2 className="text-xl font-bold text-white">Settings</h2>
-        <div></div>
-      </div>
-
-      <LanguageSelector
-        currentLanguage={language}
-        onLanguageChange={setLanguage}
-        variant="simple"
-      />
-
-      <InfoCard
-        title="Privacy & Data"
-        description="Your recordings and personal information are stored locally on your device. We never share your data with third parties."
-      />
-
-      <InfoCard
-        title="Legal Disclaimer"
-        description="This app provides general legal information and should not replace professional legal advice. Laws vary by jurisdiction."
-      />
-    </div>
+    </>
   );
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-md mx-auto">
-        {currentView === 'home' && renderHomeView()}
-        {currentView === 'rights' && renderRightsView()}
-        {currentView === 'contacts' && renderContactsView()}
-        {currentView === 'settings' && renderSettingsView()}
-
-        {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-black bg-opacity-50 backdrop-blur-lg border-t border-white border-opacity-20">
-          <div className="max-w-md mx-auto px-4 py-2">
-            <div className="flex justify-around">
-              <button
-                onClick={() => setCurrentView('home')}
-                className={`p-3 rounded-lg transition-all duration-200 ${
-                  currentView === 'home' ? 'bg-white bg-opacity-20 text-white' : 'text-gray-400'
-                }`}
-              >
-                <Shield className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setCurrentView('rights')}
-                className={`p-3 rounded-lg transition-all duration-200 ${
-                  currentView === 'rights' ? 'bg-white bg-opacity-20 text-white' : 'text-gray-400'
-                }`}
-              >
-                <Shield className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setCurrentView('contacts')}
-                className={`p-3 rounded-lg transition-all duration-200 ${
-                  currentView === 'contacts' ? 'bg-white bg-opacity-20 text-white' : 'text-gray-400'
-                }`}
-              >
-                <Users className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setCurrentView('settings')}
-                className={`p-3 rounded-lg transition-all duration-200 ${
-                  currentView === 'settings' ? 'bg-white bg-opacity-20 text-white' : 'text-gray-400'
-                }`}
-              >
-                <Settings2 className="w-5 h-5" />
-              </button>
-            </div>
+    <div className="min-h-screen relative overflow-hidden">
+      <FloatingElements />
+      
+      {/* Header */}
+      <header className="relative z-10 p-6 pb-0">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold gradient-text">
+              KnowYourRights Cards
+            </h1>
+            <p className="text-gray-300 mt-1">
+              Informed. Confident. In control.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <LanguageSelector
+              currentLanguage={user.languagePreference}
+              onLanguageChange={handleLanguageChange}
+            />
+            <button
+              onClick={() => setCurrentView('settings')}
+              className="glass-button p-2"
+            >
+              <Settings2 className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
-        {/* Floating Action Buttons */}
-        <RecordingControls
-          onRecordingStart={handleRecordingStart}
-          onRecordingStop={handleRecordingStop}
-        />
+        {/* Location & Status */}
+        <div className="flex items-center gap-4 text-sm text-gray-300 mb-6">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4" />
+            <span>{user.state || 'Unknown'} State</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <span>Ready</span>
+          </div>
+        </div>
+      </header>
 
-        {/* Emergency Alert */}
-        <EmergencyAlert
-          contacts={emergencyContacts}
-          currentLocation={userLocation || undefined}
-          language={language}
-          onAlertSent={handleEmergencyAlert}
-        />
-      </div>
+      {/* Main Content */}
+      <main className="relative z-10 px-6 pb-24">
+        {currentView === 'home' && (
+          <div className="space-y-6">
+            {/* Quick Action Cards */}
+            <section>
+              <h2 className="text-xl font-semibold text-white mb-4">
+                Know Your Rights
+              </h2>
+              <p className="text-gray-300 mb-6">
+                Essential information for any police encounter. 
+                One tap for quick reference.
+              </p>
+              
+              <div className="grid gap-4">
+                {BASIC_RIGHTS_CARDS.slice(0, 2).map((card) => (
+                  <InfoCard
+                    key={card.id}
+                    card={card}
+                    variant="basic"
+                  />
+                ))}
+              </div>
+              
+              <button className="w-full mt-4 glass-button flex items-center justify-center gap-2">
+                <Plus className="w-4 h-4" />
+                View All Rights Cards
+              </button>
+            </section>
+
+            {/* Recent Interactions */}
+            {interactionLogs.length > 0 && (
+              <section>
+                <h2 className="text-xl font-semibold text-white mb-4">
+                  Recent Interactions
+                </h2>
+                <div className="space-y-3">
+                  {interactionLogs.slice(0, 2).map((log) => (
+                    <div key={log.logId} className="glass-card p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-blue-500 bg-opacity-20 rounded-full flex items-center justify-center">
+                          <Clock className="w-5 h-5 text-blue-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white text-sm">{log.summary}</p>
+                          <p className="text-gray-400 text-xs mt-1">
+                            {log.timestamp.toLocaleDateString()} at {log.timestamp.toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Emergency Contacts Preview */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-white">
+                  Emergency Contacts
+                </h2>
+                <button
+                  onClick={() => setCurrentView('contacts')}
+                  className="text-sm text-purple-400 hover:text-purple-300"
+                >
+                  Manage
+                </button>
+              </div>
+              
+              <ContactList
+                contacts={user.emergencyContacts.slice(0, 2)}
+              />
+            </section>
+          </div>
+        )}
+
+        {currentView === 'contacts' && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={() => setCurrentView('home')}
+                className="glass-button p-2"
+              >
+                ←
+              </button>
+              <h2 className="text-2xl font-semibold text-white">
+                Emergency Contacts
+              </h2>
+            </div>
+            
+            <ContactList
+              contacts={user.emergencyContacts}
+              variant="editable"
+              onContactsChange={handleContactsChange}
+            />
+          </div>
+        )}
+
+        {currentView === 'settings' && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={() => setCurrentView('home')}
+                className="glass-button p-2"
+              >
+                ←
+              </button>
+              <h2 className="text-2xl font-semibold text-white">
+                Settings
+              </h2>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="glass-card p-4">
+                <h3 className="font-medium text-white mb-2">Language</h3>
+                <LanguageSelector
+                  currentLanguage={user.languagePreference}
+                  onLanguageChange={handleLanguageChange}
+                />
+              </div>
+              
+              <div className="glass-card p-4">
+                <h3 className="font-medium text-white mb-2">Location</h3>
+                <p className="text-gray-300 text-sm">
+                  Current state: <span className="text-white">{user.state}</span>
+                </p>
+                <p className="text-gray-400 text-xs mt-1">
+                  Used for state-specific legal information
+                </p>
+              </div>
+              
+              <div className="glass-card p-4">
+                <h3 className="font-medium text-white mb-2">Interaction History</h3>
+                <p className="text-gray-300 text-sm">
+                  {interactionLogs.length} recorded interaction{interactionLogs.length !== 1 ? 's' : ''}
+                </p>
+                <button className="text-purple-400 text-sm mt-2 hover:text-purple-300">
+                  View All Records
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Floating Action Buttons */}
+      {currentView === 'home' && (
+        <>
+          <ActionFAB
+            icon={Mic}
+            label="Record Interaction"
+            variant="record"
+            onClick={() => setShowRecordingModal(true)}
+            className="bottom-24 right-6"
+          />
+          
+          <ActionFAB
+            icon={AlertTriangle}
+            label="Emergency Alert"
+            variant="secondary"
+            onClick={() => setShowEmergencyAlert(true)}
+            className="bottom-24 right-24"
+          />
+        </>
+      )}
+
+      {/* Modals */}
+      <RecordingModal
+        isOpen={showRecordingModal}
+        onClose={() => setShowRecordingModal(false)}
+        onSave={handleRecordingSave}
+      />
+      
+      <EmergencyAlert
+        isOpen={showEmergencyAlert}
+        onClose={() => setShowEmergencyAlert(false)}
+        contacts={user.emergencyContacts}
+        onAlertSent={handleEmergencyAlert}
+      />
     </div>
   );
 }

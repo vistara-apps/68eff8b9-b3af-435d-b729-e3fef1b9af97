@@ -4,70 +4,47 @@ export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
+export function getCurrentLocation(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation is not supported by this browser.'));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 60000,
+    });
+  });
 }
 
-export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+export function formatPhoneNumber(phone: string): string {
+  const cleaned = phone.replace(/\D/g, '');
+  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+  if (match) {
+    return `(${match[1]}) ${match[2]}-${match[3]}`;
+  }
+  return phone;
 }
 
-export function detectStateFromCoordinates(lat: number, lng: number): Promise<string> {
-  // In a real app, this would use a geocoding service
-  // For demo purposes, return a default state
-  return Promise.resolve('CA');
+export function getStateFromCoordinates(lat: number, lng: number): string {
+  // Simplified state detection - in production, use a proper geocoding service
+  if (lat >= 32.5 && lat <= 42 && lng >= -124.4 && lng <= -114.1) return 'CA';
+  if (lat >= 25.8 && lat <= 31 && lng >= -106.6 && lng <= -93.5) return 'TX';
+  if (lat >= 40.5 && lat <= 45.0 && lng >= -79.8 && lng <= -71.8) return 'NY';
+  return 'Unknown';
 }
 
 export function generateInteractionSummary(
   location: string,
-  duration: number,
-  notes: string
+  timestamp: Date,
+  duration?: number
 ): string {
-  return `Police interaction at ${location} lasting ${Math.round(duration / 60)} minutes. ${notes}`;
-}
-
-export function validatePhoneNumber(phone: string): boolean {
-  const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
-  return phoneRegex.test(phone);
-}
-
-export function sanitizeInput(input: string): string {
-  return input.trim().replace(/[<>]/g, '');
-}
-
-export async function requestLocationPermission(): Promise<GeolocationPosition | null> {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve(null);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => resolve(position),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  });
-}
-
-export function shareInteractionSummary(summary: string, location: string): void {
-  if (navigator.share) {
-    navigator.share({
-      title: 'Police Interaction Summary',
-      text: summary,
-      url: `https://maps.google.com/?q=${location}`,
-    });
-  } else {
-    // Fallback to copying to clipboard
-    navigator.clipboard.writeText(`${summary}\nLocation: ${location}`);
-  }
+  const time = timestamp.toLocaleTimeString();
+  const date = timestamp.toLocaleDateString();
+  
+  return `Police interaction on ${date} at ${time} near ${location}${
+    duration ? `. Duration: ${Math.round(duration / 60)} minutes` : ''
+  }.`;
 }

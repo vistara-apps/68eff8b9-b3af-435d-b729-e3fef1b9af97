@@ -1,139 +1,139 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Send, MapPin, Clock } from 'lucide-react';
+import { AlertTriangle, Send, X, MapPin } from 'lucide-react';
 import { EmergencyContact } from '@/lib/types';
-import { EMERGENCY_SCRIPTS } from '@/lib/constants';
+import { getCurrentLocation } from '@/lib/utils';
 
 interface EmergencyAlertProps {
+  isOpen: boolean;
+  onClose: () => void;
   contacts: EmergencyContact[];
-  currentLocation?: { latitude: number; longitude: number; address?: string };
-  language: 'en' | 'es';
-  onAlertSent: (contactIds: string[]) => void;
+  onAlertSent: () => void;
 }
 
-export function EmergencyAlert({
-  contacts,
-  currentLocation,
-  language,
-  onAlertSent
-}: EmergencyAlertProps) {
-  const [isAlertActive, setIsAlertActive] = useState(false);
-  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
-  const [customMessage, setCustomMessage] = useState('');
+export function EmergencyAlert({ isOpen, onClose, contacts, onAlertSent }: EmergencyAlertProps) {
+  const [isSending, setIsSending] = useState(false);
+  const [location, setLocation] = useState<string>('');
 
   const sendAlert = async () => {
-    if (selectedContacts.length === 0) {
-      alert('Please select at least one contact to alert.');
-      return;
+    setIsSending(true);
+    
+    try {
+      // Get current location
+      const position = await getCurrentLocation();
+      const locationText = `${position.coords.latitude}, ${position.coords.longitude}`;
+      setLocation(locationText);
+      
+      // In a real app, this would send SMS/notifications to contacts
+      // For demo purposes, we'll simulate the alert
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      onAlertSent();
+      onClose();
+    } catch (error) {
+      console.error('Error sending alert:', error);
+      alert('Unable to send alert. Please check your location permissions.');
+    } finally {
+      setIsSending(false);
     }
-
-    const message = customMessage || EMERGENCY_SCRIPTS[language].alert;
-    const locationText = currentLocation?.address || 
-      `${currentLocation?.latitude}, ${currentLocation?.longitude}` || 
-      'Location unavailable';
-
-    const fullMessage = `${message}\n\nLocation: ${locationText}\nTime: ${new Date().toLocaleString()}`;
-
-    // In a real app, this would send SMS/notifications
-    console.log('Sending alert to contacts:', selectedContacts);
-    console.log('Message:', fullMessage);
-
-    // Simulate sending
-    setTimeout(() => {
-      onAlertSent(selectedContacts);
-      setIsAlertActive(false);
-      setSelectedContacts([]);
-      setCustomMessage('');
-    }, 1000);
   };
 
-  if (!isAlertActive) {
-    return (
-      <button
-        onClick={() => setIsAlertActive(true)}
-        className="fixed bottom-6 left-6 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white p-4 rounded-full shadow-modal transition-all duration-200 hover:scale-110"
-      >
-        <AlertTriangle className="w-6 h-6" />
-      </button>
-    );
-  }
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="glass-card max-w-md w-full p-6 space-y-6">
-        <div className="text-center">
-          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Emergency Alert</h2>
-          <p className="text-gray-300">
-            {language === 'en' 
-              ? 'Send an alert to your emergency contacts'
-              : 'Enviar una alerta a tus contactos de emergencia'
-            }
-          </p>
-        </div>
-
-        {currentLocation && (
-          <div className="glass-card p-3 flex items-center space-x-2">
-            <MapPin className="w-4 h-4 text-accent" />
-            <span className="text-sm text-gray-300">
-              {currentLocation.address || `${currentLocation.latitude}, ${currentLocation.longitude}`}
-            </span>
+    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="glass-card p-6 w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-500 bg-opacity-20 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-red-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Emergency Alert</h3>
           </div>
-        )}
-
-        <div>
-          <h3 className="font-medium text-white mb-3">Select Contacts:</h3>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
-            {contacts.map((contact) => (
-              <label key={contact.id} className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedContacts.includes(contact.id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedContacts([...selectedContacts, contact.id]);
-                    } else {
-                      setSelectedContacts(selectedContacts.filter(id => id !== contact.id));
-                    }
-                  }}
-                  className="w-4 h-4 text-accent"
-                />
-                <span className="text-white">{contact.name}</span>
-                <span className="text-gray-400 text-sm">({contact.relationship})</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-white font-medium mb-2">
-            {language === 'en' ? 'Custom Message (Optional)' : 'Mensaje Personalizado (Opcional)'}
-          </label>
-          <textarea
-            value={customMessage}
-            onChange={(e) => setCustomMessage(e.target.value)}
-            placeholder={EMERGENCY_SCRIPTS[language].alert}
-            className="w-full p-3 bg-white bg-opacity-10 border border-white border-opacity-20 rounded-lg text-white placeholder-gray-400 resize-none"
-            rows={3}
-          />
-        </div>
-
-        <div className="flex space-x-3">
           <button
-            onClick={() => setIsAlertActive(false)}
-            className="flex-1 btn-secondary"
+            onClick={onClose}
+            className="p-2 hover:bg-white hover:bg-opacity-10 rounded-lg transition-colors duration-200"
           >
-            {language === 'en' ? 'Cancel' : 'Cancelar'}
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        {/* Alert Preview */}
+        <div className="mb-6">
+          <h4 className="text-sm font-medium text-gray-300 mb-3">Alert Message:</h4>
+          <div className="p-4 bg-red-500 bg-opacity-10 border border-red-500 border-opacity-20 rounded-lg">
+            <p className="text-red-200 text-sm">
+              🚨 <strong>EMERGENCY:</strong> I am currently in a police interaction. 
+              My location is attached. Please monitor this situation and be prepared 
+              to provide assistance if needed.
+            </p>
+            {location && (
+              <div className="flex items-center gap-2 mt-3 text-xs text-red-300">
+                <MapPin className="w-3 h-3" />
+                <span>Location: {location}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recipients */}
+        <div className="mb-6">
+          <h4 className="text-sm font-medium text-gray-300 mb-3">
+            Will be sent to {contacts.length} contact{contacts.length !== 1 ? 's' : ''}:
+          </h4>
+          <div className="space-y-2">
+            {contacts.slice(0, 3).map((contact) => (
+              <div key={contact.id} className="flex items-center gap-3 text-sm text-gray-300">
+                <div className="w-2 h-2 bg-green-400 rounded-full" />
+                <span>{contact.name}</span>
+                <span className="text-gray-500">({contact.phone})</span>
+              </div>
+            ))}
+            {contacts.length > 3 && (
+              <div className="text-sm text-gray-400">
+                +{contacts.length - 3} more contacts
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 glass-button"
+            disabled={isSending}
+          >
+            Cancel
           </button>
           <button
             onClick={sendAlert}
-            className="flex-1 btn-primary flex items-center justify-center space-x-2"
+            disabled={isSending || contacts.length === 0}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-500 bg-opacity-20 border border-red-500 border-opacity-30 rounded-lg text-red-400 hover:bg-opacity-30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Send className="w-4 h-4" />
-            <span>{language === 'en' ? 'Send Alert' : 'Enviar Alerta'}</span>
+            {isSending ? (
+              <>
+                <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Send Alert
+              </>
+            )}
           </button>
         </div>
+
+        {contacts.length === 0 && (
+          <div className="mt-4 p-3 bg-yellow-500 bg-opacity-10 border border-yellow-500 border-opacity-20 rounded-lg">
+            <p className="text-sm text-yellow-200">
+              No emergency contacts configured. Add contacts in settings to use this feature.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

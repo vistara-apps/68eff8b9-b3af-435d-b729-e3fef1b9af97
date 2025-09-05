@@ -11,10 +11,6 @@
     @apply bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white min-h-screen;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-  
-  html {
-    scroll-behavior: smooth;
-  }
 }
 
 @layer components {
@@ -22,41 +18,29 @@
     @apply bg-white bg-opacity-10 backdrop-blur-lg border border-white border-opacity-20 rounded-lg shadow-card;
   }
   
-  .glass-card-hover {
-    @apply glass-card hover:bg-opacity-15 transition-all duration-200 cursor-pointer;
+  .glass-button {
+    @apply bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg px-4 py-2 text-white font-medium hover:bg-opacity-30 transition-all duration-200;
   }
   
-  .btn-primary {
-    @apply bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-lg hover:shadow-xl;
+  .gradient-text {
+    @apply bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent;
   }
   
-  .btn-secondary {
-    @apply glass-card text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-20 transition-all duration-200;
+  .floating-element {
+    @apply absolute opacity-20 pointer-events-none;
+    animation: float 6s ease-in-out infinite;
   }
   
-  .floating-action-btn {
-    @apply fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-modal flex items-center justify-center text-white font-bold text-lg transition-all duration-200 hover:scale-110;
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
   }
   
-  .metric-card {
-    @apply glass-card p-4 hover:bg-opacity-15 transition-all duration-200;
+  .card-hover {
+    @apply hover:scale-105 hover:shadow-modal transition-all duration-200;
   }
   
-  .info-card {
-    @apply glass-card p-6 space-y-4;
-  }
-  
-  .script-card {
-    @apply glass-card p-4 border-l-4 border-accent;
-  }
-}
-
-@layer utilities {
-  .text-gradient {
-    @apply bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent;
-  }
-  
-  .animate-pulse-slow {
-    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  .fab-button {
+    @apply fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-modal hover:scale-110 transition-all duration-200 z-50;
   }
 }

@@ -1,49 +1,71 @@
 'use client';
 
+import { useState } from 'react';
 import { Globe } from 'lucide-react';
-import { LanguageSelectorProps } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
-export function LanguageSelector({
-  currentLanguage,
-  onLanguageChange,
-  variant
+interface LanguageSelectorProps {
+  currentLanguage: 'en' | 'es';
+  onLanguageChange: (language: 'en' | 'es') => void;
+  variant?: 'simple';
+}
+
+const languages = {
+  en: { label: 'English', flag: '🇺🇸' },
+  es: { label: 'Español', flag: '🇪🇸' },
+};
+
+export function LanguageSelector({ 
+  currentLanguage, 
+  onLanguageChange, 
+  variant = 'simple' 
 }: LanguageSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div className="glass-card p-4">
-      <div className="flex items-center space-x-3 mb-4">
-        <Globe className="w-5 h-5 text-white" />
-        <h3 className="font-medium text-white">Language / Idioma</h3>
-      </div>
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          'flex items-center gap-2 glass-button',
+          variant === 'simple' && 'px-3 py-2'
+        )}
+      >
+        <Globe className="w-4 h-4" />
+        <span className="text-sm">
+          {languages[currentLanguage].flag} {languages[currentLanguage].label}
+        </span>
+      </button>
 
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={() => onLanguageChange('en')}
-          className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-            currentLanguage === 'en'
-              ? 'border-accent bg-accent bg-opacity-20 text-white'
-              : 'border-white border-opacity-20 text-gray-300 hover:border-opacity-40'
-          }`}
-        >
-          <div className="text-center">
-            <div className="text-lg font-semibold">🇺🇸</div>
-            <div className="text-sm">English</div>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          
+          {/* Dropdown */}
+          <div className="absolute top-full left-0 mt-2 w-48 glass-card p-2 z-50">
+            {Object.entries(languages).map(([code, lang]) => (
+              <button
+                key={code}
+                onClick={() => {
+                  onLanguageChange(code as 'en' | 'es');
+                  setIsOpen(false);
+                }}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-white hover:bg-opacity-10 transition-colors duration-200',
+                  currentLanguage === code && 'bg-white bg-opacity-10'
+                )}
+              >
+                <span className="text-lg">{lang.flag}</span>
+                <span className="text-white">{lang.label}</span>
+              </button>
+            ))}
           </div>
-        </button>
-
-        <button
-          onClick={() => onLanguageChange('es')}
-          className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-            currentLanguage === 'es'
-              ? 'border-accent bg-accent bg-opacity-20 text-white'
-              : 'border-white border-opacity-20 text-gray-300 hover:border-opacity-40'
-          }`}
-        >
-          <div className="text-center">
-            <div className="text-lg font-semibold">🇪🇸</div>
-            <div className="text-sm">Español</div>
-          </div>
-        </button>
-      </div>
+        </>
+      )}
     </div>
   );
 }
